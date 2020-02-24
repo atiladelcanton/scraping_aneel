@@ -1,0 +1,14 @@
+{
+  "name": "scraping_aneel",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:atiladelcanton/scraping_aneel.git",
+  "author": "Atila Rampazo <atilarampazo@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "json2csv": "^4.5.4",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5"
+  }
+}
