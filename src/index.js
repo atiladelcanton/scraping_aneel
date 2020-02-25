@@ -1,131 +1,83 @@
-const cheerio = require("cheerio");
-const request = require("request-promise");
-const fs = require("fs");
-const { Parser } = require("json2csv");
-let dados = [];
-async function extracao(site) {
-  const html = await request.get(site);
-  const $ = await cheerio.load(html);
+const cheerio = require('cheerio')
+const request = require('request-promise')
+const fs = require('fs')
+const { Parser } = require('json2csv')
 
-  const padraoTabelaDados =
-    "body > table > tbody > tr:nth-child(4) > td > table:nth-child(4) > tbody >";
-  for (i = 2; i < 1003; i++) {
-    let distribuidora = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(1)`
-    )
-      .text()
-      .trim();
-    let codigo = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(2)`)
-      .text()
-      .trim();
-    let titular = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(3)`)
-      .text()
-      .trim();
-    let classe = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(4)`)
-      .text()
-      .trim();
-    let subgrupo = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(5)`
-    )
-      .text()
-      .trim();
-    let modalidade = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(6)`
-    )
-      .text()
-      .trim();
-    let qtd_ucs = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(7)`)
-      .text()
-      .trim();
-    let municipio = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(8)`
-    )
-      .text()
-      .trim();
-    let uf = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(9)`)
-      .text()
-      .trim();
-    let cep = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(10)`)
-      .text()
-      .trim();
-    let data_conexao = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(11)`
-    )
-      .text()
-      .trim();
-    let fonte = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(12)`)
-      .text()
-      .trim();
-    let kw = $(`${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(13)`)
-      .text()
-      .trim();
-    let qtd_modulos = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(14)`
-    )
-      .text()
-      .trim();
-    let qtd_inversores = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(15)`
-    )
-      .text()
-      .trim();
-    let area_arranjo = $(
-      `${padraoTabelaDados} tr:nth-child(${i}) > td:nth-child(16)`
-    )
-      .text()
-      .trim();
-    dados.push({
-      distribuidora,
-      codigo,
-      titular,
-      classe,
-      subgrupo,
-      modalidade,
-      qtd_ucs,
-      municipio,
-      uf,
-      cep,
-      data_conexao,
-      fonte,
-      kw,
-      qtd_modulos,
-      qtd_inversores,
-      area_arranjo
-    });
+let data = []
+let count = 0
+const defaultDataTable =
+	'body > table > tbody > tr:nth-child(4) > td > table:nth-child(4) > tbody >'
 
-    const parser = new Parser();
-    const csv = parser.parse(dados);
-    console.log(dados);
-    fs.writeFileSync("./dados-aneel.csv", csv, "utf-8");
-    await demora();
-  }
+function prepareData($, index, position) {
+	return $(
+		`${defaultDataTable} tr:nth-child(${index}) > td:nth-child(${position})`
+	)
+		.text()
+		.trim()
 }
 
-async function demora() {
-  await sleep(1000);
-  await console.log(`Passando 1 Segundo...`);
+async function delay() {
+	await sleep(1000)
+	console.log(`Passando 1 Segundo...`)
 }
 
 async function sleep(ml) {
-  return new Promise(resolve => setTimeout(resolve, ml));
+	setTimeout(() => {
+		return Promise.resolve()
+	}, ml)
 }
-let count = 0;
+
+async function extraction(site) {
+	const html = await request.get(site)
+	const $ = await cheerio.load(html)
+
+	for (i = 2; i < 1003; i++) {
+		const objData = {
+			distribuidora: prepareData($, i, 1),
+			codigo: prepareData($, i, 2),
+			titular: prepareData($, i, 3),
+			classe: prepareData($, i, 4),
+			subgrupo: prepareData($, i, 5),
+			modalidade: prepareData($, i, 6),
+			qtd_ucs: prepareData($, i, 7),
+			municipio: prepareData($, i, 8),
+			uf: prepareData($, i, 9),
+			cep: prepareData($, i, 10),
+			data_conexao: prepareData($, i, 11),
+			fonte: prepareData($, i, 12),
+			kw: prepareData($, i, 13),
+			qtd_modulos: prepareData($, i, 14),
+			qtd_inversores: prepareData($, i, 15),
+			area_arranjo: prepareData($, i, 16)
+		}
+
+		data.push(objData)
+
+		const parser = new Parser()
+		const csv = parser.parse(data)
+		console.log(data)
+		fs.writeFileSync('./dados-aneel.csv', csv, 'utf-8')
+		await delay()
+	}
+}
+
 async function extraitodas(site) {
-  const html = await request.get(site);
-  const $ = await cheerio.load(html);
-  let paginas = $(
-    "body > table > tbody > tr:nth-child(4) > td > table:nth-child(4) > tbody > tr:nth-child(1) > td"
-  )
-    .text()
-    .slice(0, -9)
-    .trim()
-    .split("   ").length;
+	const html = await request.get(site)
+	const $ = await cheerio.load(html)
 
-  while (count <= paginas) {
-    const urlsFilhos = `http://www2.aneel.gov.br/scg/gd/gd_fonte_detalhe.asp?tipo=12&pagina=${count}`;
-    extracao(urlsFilhos);
-    count++;
-  }
+	let paginas = $(
+		'body > table > tbody > tr:nth-child(4) > td > table:nth-child(4) > tbody > tr:nth-child(1) > td'
+	)
+		.text()
+		.slice(0, -9)
+		.trim()
+		.split('   ').length
+
+	while (count <= paginas) {
+		const urlsFilhos = `http://www2.aneel.gov.br/scg/gd/gd_fonte_detalhe.asp?tipo=12&pagina=${count}`
+		extraction(urlsFilhos)
+		count++
+	}
 }
 
-extraitodas("http://www2.aneel.gov.br/scg/gd/gd_fonte_detalhe.asp?tipo=12");
+extraitodas('http://www2.aneel.gov.br/scg/gd/gd_fonte_detalhe.asp?tipo=12')
